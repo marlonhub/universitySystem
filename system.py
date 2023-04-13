@@ -1,5 +1,4 @@
 import mysql.connector as mysql
-# import prettytable library
 from prettytable import PrettyTable
 db = mysql.connect(host="localhost", user="root", password="", database="college")
 command_handler = db.cursor(buffered=True)
@@ -374,7 +373,91 @@ def enroll_info():
             print("Invalid option. Please try again.")
     
 def schedule_info():
-   print(" schedule info")
+   while 1:
+        print("")
+        print("Schedule Menu")
+        print("1. Register Schedule")
+        print("2. View Existing Schedule")
+        print("3. Edit Existing Schedule")
+        print("4. Delete Existing Schedule")
+        print("5. Logout")
+
+        user_option = input(str("Option: "))
+    # Create Schedule
+        if user_option == "1":
+            print("")
+            print("Register New Schedule")
+
+            id = input(str("Student ID: "))
+            courseid = input(str("Course ID: "))
+
+            # Check if student ID exists in the student table
+            command_handler.execute("SELECT * FROM student WHERE id = %s", (id,))
+            student_exists = command_handler.fetchone()
+
+            # Check if course ID exists in the course table
+            command_handler.execute("SELECT * FROM course WHERE courseid = %s", (courseid,))
+            course_exists = command_handler.fetchone()
+
+            if student_exists and course_exists:
+                # Retrieve sTime, eTime, and roomNum from the course table
+                command_handler.execute("SELECT sTime, eTime, roomNum FROM course WHERE courseid = %s", (courseid,))
+                course_data = command_handler.fetchone()
+                sTime, eTime, roomNum = course_data
+
+                # Insert the new schedule with the retrieved data
+                querys_vals = (id, courseid, sTime, eTime, roomNum)
+                command_handler.execute("INSERT INTO schedule (id, courseid, sTime, eTime, roomNum) VALUES (%s, %s, %s, %s, %s)", querys_vals)
+                db.commit()
+                print("Schedule has been registered!")
+            else:
+                if not student_exists:
+                    print("Student ID does not exist.")
+                if not course_exists:
+                    print("Course ID does not exist.")
+        # View schedules
+        elif user_option == "2":
+            print("")
+            print("View Existing Schedules")
+
+            # Execute SQL query to retrieve all schedule information
+            command_handler.execute("SELECT s.schedule_id, s.id, st.firstname, s.courseid, c.courseName, c.courseInstructor, s.sTime, s.eTime, s.roomNum FROM schedule s JOIN student st ON s.id = st.id JOIN course c ON s.courseid = c.courseid")
+            result = command_handler.fetchall()
+
+            if len(result) < 1:
+                print("No schedules found")
+            else:
+                # Create a PrettyTable object and set the field names
+                table = PrettyTable()
+                table.field_names = ["Schedule ID", "Student ID", "Student Name", "Course ID", "Course Name", "Course Instructor", "Start Time", "End Time", "Room Number"]
+
+                # Add each row of data to the table
+                for row in result:
+                    table.add_row(row)
+
+                # Print the table
+                print(table)
+        elif user_option == "3":
+            print("Please notice you cannot edit details in the schedule as it pretains to other tables in the database." "\nPlease refer to the student section or the course section.")
+ # Delete User by id
+        elif user_option == "4":
+            print("")
+            print("Delete Existing Schedule ")
+            schedule_id = input(str("Schedule ID : "))
+            query_vals = (schedule_id,)
+            command_handler.execute("DELETE FROM schedule WHERE schedule_id = %s", query_vals)
+            db.commit()
+            if command_handler.rowcount < 1:
+                print("Schedule not found")
+            else:
+                print("Schedule with ID " + schedule_id + " has been deleted")
+        # Logout
+        elif user_option == "5":
+            print("Logging out...")
+            break
+        else:
+            print("Invalid option. Please try again.")
+
 
 
 
@@ -489,15 +572,109 @@ def prof_info():
         if user_option == "1":
             print("")
             print("Register New Professor")
-            departmentName = input(str(" Name: " ))
-            querys_vals = (departmentName, )
-            command_handler.execute("INSERT INTO department (departmentName) VALUES (%s)", querys_vals)
+            firstname = input(str("Professor Name: " ))
+            lastname = input(str("Professor Last Name: " ))
+            address = input(str("Professor Address: " ))
+            phoneNum = input(str("Phone #: " ))
+            email = input(str("Email: " ))
+
+            querys_vals = (firstname, lastname,address,phoneNum,email )
+            command_handler.execute("INSERT INTO professor (firstname, lastname,address,phoneNum,email ) VALUES (%s,%s,%s,%s,%s)", querys_vals)
             db.commit()
-            print(departmentName + " has been registered as a department!")
+            print(firstname + " has been registered as a professor!")
+    
+    # View professor
+        elif user_option == "2":
+            print("")
+            print("View Existing Professor")
+            
+            # execute SQL query to retrieve all student information
+            command_handler.execute("SELECT professorid, firstname, lastname, address, phoneNum, email FROM professor")
+            result = command_handler.fetchall()
+            
+            if len(result) < 1:
+                print("No professors found")
+            else:
+                # create a PrettyTable object and set the field names
+                table = PrettyTable()
+                table.field_names = ["Professor ID", "First Name", "Last Name", "Address", "Phone #", "Email"]
+                
+                # add each row of data to the table
+                for row in result:
+                    table.add_row(row)
+                    
+                # print the table
+                print(table)
 
+         # Delete professor by id
+        elif user_option == "3":
+            print("")
+            print("Delete Existing Professor ")
+            professor_id = input(str("Professor ID : "))
+            query_vals = (professor_id,)
+            command_handler.execute("DELETE FROM professor WHERE professorid = %s", query_vals)
+            db.commit()
+            if command_handler.rowcount < 1:
+                print("Professor not found")
+            else:
+                print("Professor with ID " + professor_id + " has been deleted")
+        
+         # Edit Professor
+        elif user_option == "4":
+            print("")
+            print("Edit Existing Professor")
+            professor_id = input(str("Professor ID : "))
+            query_vals = (professor_id,)
+            command_handler.execute("SELECT * FROM professor WHERE professorid = %s", query_vals)
+            result = command_handler.fetchone()
+            if result is None:
+                print("Professor not found")
+            else:
+                print("Current Information:")
+                print(f"Professor First Name: {result[0]}")
+                print(f"Professor Last Name: {result[1]}")
+                print(f"Professor Address: {result[2]}")
+                print(f"Professor Phone #: {result[3]}")
+                print(f"Professor Email: {result[4]}")
+                
 
+                # get new values from user
+                firstname = input(str("New professor first name (press enter to keep current value): "))
+                lastname = input(str("New professor surname (press enter to keep current value): "))
+                address = input(str("New professor address (press enter to keep current value): "))
+                phoneNum = input(str("New professor phone # (press enter to keep current value): "))
+                email = input(str("New professor email (press enter to keep current value): "))
 
-
+                # build SQL query and execute   
+                update_vals = ()
+                update_cols = []
+                if firstname != "":
+                    update_cols.append("firstname = %s")
+                    update_vals += (firstname,)
+                if lastname != "":
+                    update_cols.append("lastname = %s")
+                    update_vals += (lastname,)
+                if address != "":
+                    update_cols.append("address = %s")
+                    update_vals += (address,)
+                if phoneNum != "":
+                    update_cols.append("phoneNum = %s")
+                    update_vals += (phoneNum,)
+                if email != "":
+                    update_cols.append("email = %s")
+                    update_vals += (email,)
+                if len(update_cols) > 0:
+                    update_cols_str = ", ".join(update_cols)
+                    update_vals += (professor_id,)
+                    command_handler.execute(f"UPDATE professor SET {update_cols_str} WHERE professorid = %s", update_vals)
+                    db.commit()
+                    print("Professor information updated!")
+                else:
+                    print("No changes made")
+        
+        elif user_option == "5":
+            auth_admin()
+        
 
 
 
@@ -538,29 +715,65 @@ def auth_admin():
     print("Student Login")
     username = input(str("Username: "))
     password = input(str("Password: "))
-    if username == "user":
-        if password == "pass":
-            student_portal()
-        else:
-            print("Incorrect password!")
+    
+    # Create a command handler for the database connection
+    command_handler = db.cursor()
+
+    # Check if the user exists in the users table
+    command_handler.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+    user_exists = command_handler.fetchone()
+
+  
+
+    if user_exists:
+        student_portal()
     else:
-            print("Login details not recognized")
+        print("Login details not recognized")
 
 
+def register_user():
+    print("")
+    print("User Registration")
+    username = input("Username: ")
+    password = input("Password: ")
+
+  
+    # Create a command handler for the database connection
+    command_handler = db.cursor()
+
+    # Check if the username already exists in the users table
+    command_handler.execute("SELECT * FROM users WHERE username = %s", (username,))
+    user_exists = command_handler.fetchone()
+
+    if user_exists:
+        print("Username already exists. Please choose a different username.")
+    else:
+        # Insert the new user into the users table
+        query_vals = (username, password)
+        command_handler.execute("INSERT INTO users (username, password) VALUES (%s, %s)", query_vals)
+        db.commit()
+        print("User has been registered!")
+
+   
 
 def main():
-    while 1:
-        print("Welcome to the college system")
-        print("")
-        print("1. Login in as a student")
-        try:
-            user_option = input(str("Option: "))
-        except:
-            print("Error.")
+    while True:
+        print("\nMain Menu")
+        print("1. Register User")
+        print("2. Login")
+        print("3. Exit")
+
+        user_option = input("Option: ")
+
         if user_option == "1":
+            register_user()
+        elif user_option == "2":
             auth_admin()
-        
+        elif user_option == "3":
+            print("Exiting the program...")
+            break
         else:
-            print("No valid option was selected!")
-       
+            print("Invalid option. Please try again.")
+
+
 main()
