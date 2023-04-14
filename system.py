@@ -687,6 +687,7 @@ def student_portal():
     print("4. Schedule Info")
     print("5. Department Info")
     print("6. Professor Info")
+    print("7. Update Password")
 
 
     try:
@@ -723,12 +724,62 @@ def auth_admin():
     command_handler.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
     user_exists = command_handler.fetchone()
 
-  
-
     if user_exists:
-        student_portal()
+        while True:
+            print("\nUser Menu")
+            print("1. Update Password")
+            print("2. Delete Account")
+            print("3. View Student Info")
+            print("4. Continue to portal")
+            print("5. Logout")
+
+            user_option = input("Option: ")
+
+            if user_option == "1":
+                new_password = input("New Password: ")
+                # Update the user's password in the users table
+                command_handler.execute("UPDATE users SET password = %s WHERE username = %s", (new_password, username))
+                db.commit()
+                print("Password has been updated!")
+            elif user_option == "2":
+                confirm = input("Are you sure you want to delete your account? (y/n): ")
+                if confirm.lower() == "y":
+                    # Delete the user's account from the users table
+                    command_handler.execute("DELETE FROM users WHERE username = %s", (username,))
+                    db.commit()
+                    print("Account has been deleted. Goodbye!")
+                    return
+            elif user_option == "3":
+                    print("")
+                    print("View Existing Student")
+                    
+                    # execute SQL query to retrieve all student information
+                    command_handler.execute("SELECT id, username, password  FROM users")
+                    result = command_handler.fetchall()
+                    
+                    if len(result) < 1:
+                        print("No departments found")
+                    else:
+                        # create a PrettyTable object and set the field names
+                        table = PrettyTable()
+                        table.field_names = ["User ID", "Username", "Password"]
+                        
+                        # add each row of data to the table
+                        for row in result:
+                            table.add_row(row)
+                            
+                        # print the table
+                        print(table)
+            elif user_option == "4":
+                student_portal()
+            elif user_option == "5":
+                print("Logging out...")
+                return
+            else:
+                print("Invalid option. Please try again.")
     else:
         print("Login details not recognized")
+
 
 
 def register_user():
@@ -737,7 +788,6 @@ def register_user():
     username = input("Username: ")
     password = input("Password: ")
 
-  
     # Create a command handler for the database connection
     command_handler = db.cursor()
 
@@ -753,6 +803,19 @@ def register_user():
         command_handler.execute("INSERT INTO users (username, password) VALUES (%s, %s)", query_vals)
         db.commit()
         print("User has been registered!")
+        
+        while True:
+            confirm = input("Would you like to delete your account? (y/n): ")
+            if confirm.lower() == "y":
+                # Delete the user's account from the users table
+                command_handler.execute("DELETE FROM users WHERE username = %s", (username,))
+                db.commit()
+                print("Account has been deleted. Goodbye!")
+                return
+            elif confirm.lower() == "n":
+                return
+            else:
+                print("Invalid option. Please try again.")
 
    
 
